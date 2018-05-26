@@ -3,15 +3,26 @@ import scrapy
 from scrapy.loader import ItemLoader
 from jobcrawlers.items import JobcrawlersItem
 
+
 class StackoverflowSpider(scrapy.Spider):
     """Crawl http://stackoverflow.com for job ads."""
 
-    name = 'Stackoverflow'
+    name = 'stackoverflow'
     allowed_domains = ['stackoverflow.com']
-    start_urls = ['http://stackoverflow.com/']
+    start_urls = ['https://stackoverflow.com/jobs']
 
     def parse(self, response):
-        pass
+        """Parse http://stackoverflow.com/jobs page extracting job links."""
+
+        job_link_xpath = '//div[contains(@class, "-job") and contains(@class, "-item")]//h2/a/@href'
+        job_links = response.xpath(job_link_xpath)
+        for link in job_links:
+            yield response.follow(link, callback=self.parse_job_page)
+
+        follow_links = response.xpath(
+            '//div[contains(@class, "pagination")]//a[contains(@class, "job-link")]/@href')
+        for follow_link in follow_links:
+            yield response.follow(follow_link, callback=self.parse)
 
     def parse_job_page(self, response):
         """Parse a specific job page extracting job details.
